@@ -1,0 +1,7 @@
+requests
+websocket-client
+python-dotenv
+Pillow
+click
+numpy
+opencv-python-headless

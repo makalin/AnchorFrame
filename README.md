@@ -1,33 +1,23 @@
 # AnchorFrame
 
+![AnchorFrame Logo](logo.png)
+
 [](https://opensource.org/licenses/MIT)
 [](https://www.python.org/)
 [](https://github.com/comfyanonymous/ComfyUI)
 
-**AnchorFrame** is an open-source orchestration layer for generative AI video. It solves the "flicker" and "identity loss" problems by treating characters, props, and backgrounds as **stateful assets** rather than random generations.
+**AnchorFrame** is an open-source orchestration layer for generative AI video. It transforms ComfyUI into a fully automated "Movie Studio" by treating characters, props, and backgrounds as **stateful assets**.
 
-It acts as a "Director" that injects consistent embeddings (IP-Adapter, ControlNet) into every frame of a diffusion pipeline, ensuring that "The Man" in Shot 1 is the exact same "Man" in Shot 2.
+It acts as a "Director" that injects consistent embeddings (IP-Adapter, ControlNet) into every frame, manages audio synchronization, and even parses screenplays.
 
 ## 🚀 Key Features
 
-  * **The Vault (Asset Management):** Upload a character *once*. AnchorFrame calculates and stores the IP-Adapter embedding tensors. You don't need to re-upload or re-prompt detailed descriptions; just reference `asset_id="actor_01"`.
-  * **Scene Locking:** distinct separation of **Foreground** (Actors) and **Background** (Sets). Keep the background static (via Depth/Canny locks) while the character moves.
-  * **Temporal Anchoring:** Automatically handles "frame chaining." The last frame of Shot A becomes the noise-initialization context for Shot B, ensuring smooth cuts.
-  * **ComfyUI Bridge:** Built to sit on top of ComfyUI. We handle the complex JSON graph generation; you just write Python (or use the API).
-
-## 🛠 Architecture
-
-AnchorFrame does not train new models. It is a **Constraint Solver** for existing diffusion models.
-
-```mermaid
-graph LR
-    A[User Input] --> B(AnchorFrame Orchestrator)
-    B --> C{The Vault}
-    C -->|Retrieve Embeddings| D[IP-Adapter Nodes]
-    C -->|Retrieve Masks| E[ControlNet Nodes]
-    B -->|Construct Graph| F[ComfyUI API]
-    F --> G[Video Output]
-```
+*   **The Vault (Asset Management):** Upload a character *once*. AnchorFrame calculates and stores embeddings.
+*   **LLM Director:** Feed in a text script (screenplay format) and watch it turn into directed shots.
+*   **Audio Studio:** Integrated Text-to-Speech (ElevenLabs) and Lip Sync (Wav2Lip) pipeline.
+*   **Pose Proxy:** Generate synthetic OpenPose stick figures programmatically.
+*   **Video Assembler:** Automatically stitches generated frames into ready-to-watch MP4 videos.
+*   **CLI:** Manage projects from the command line.
 
 ## 📦 Installation
 
@@ -51,59 +41,68 @@ Rename `.env.example` to `.env` and point it to your backend:
 ```env
 COMFY_UI_URL=http://127.0.0.1:8188
 OUTPUT_DIR=./renders
+ELEVEN_LABS_API_KEY=your_key_here
 ```
 
-## 💻 Usage
+## 🎬 Usage
 
-AnchorFrame allows you to direct video programmatically.
+### The "Movie Studio" Workflow
+
+You can run a full script-to-video pipeline using the main driver:
 
 ```python
-from anchorframe import Director, Asset, Scene
+from anchorframe import Director
+from anchorframe.logic import LLMDirector
+from anchorframe.providers import LocalComfyProvider
 
-# 1. Initialize the Director
-director = Director(project="SciFi_Short")
+# 1. Initialize
+director = Director("SciFi_Epic", provider=LocalComfyProvider("http://127.0.0.1:8188"))
 
-# 2. Load Assets (Computed once, cached forever)
-hero = Asset(name="Space_Captain", image_path="./ref/face.jpg", type="person")
-prop = Asset(name="Raygun", image_path="./ref/gun.png", type="object")
-bg = Scene(image_path="./ref/bridge.png", lock_camera=True)
+# 2. Write Script
+script = """
+[INT_SPACESHIP]
+CAPTAIN: "Shields are down!" (Action: looking at console)
+"""
 
-# 3. Define the Shot
-# AnchorFrame handles the IP-Adapter injection and ControlNet plumbing automatically
-director.shoot(
-    assets=[hero, prop],
-    scene=bg,
-    prompt="holding the raygun, looking worried at the screen",
-    frames=48,
-    motion_strength=0.6,
-    seed=42
-)
+# 3. Direct
+shots = LLMDirector().convert_script(script)
+for shot in shots:
+    director.shoot(..., prompt=shot['prompt'], audio_text=shot['dialogue'])
 
-# 4. Render
+# 4. Action!
 director.action()
 ```
 
-## 🧩 The "Brainstorm" Module (Roadmap)
+### CLI
 
-We are currently working on implementing the following Logic Nodes:
+```bash
+# Initialize a new project
+python cli.py init MyMovie
 
-  - [ ] **Pose Proxy:** A built-in stick-figure editor that generates OpenPose maps for precise movement control.
-  - [ ] **Auto-Inpainting:** Automatically fixing "warped hands" by running a second pass on specific regions using the Asset embeddings.
-  - [ ] **Dialogue Sync:** Integration with Wav2Lip to force mouth movement on the generated video.
+# Run the demo
+python cli.py demo --dry-run
+```
+
+## 🛠 Architecture
+
+```mermaid
+graph LR
+    A[User Script] --> B(LLM Director)
+    B --> C[Shot List]
+    C --> D{Director}
+    D -->|TTS| E[Audio Files]
+    D -->|Assets| F[ComfyUI API]
+    F --> G[Video Frames]
+    E & G --> H[Audio Sync] --> I[Final MP4]
+```
 
 ## 🤝 Contributing
 
-We welcome contributions\! Please see `CONTRIBUTING.md` for details on how to submit a Pull Request.
-
-1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
+We welcome contributions! Please see `CONTRIBUTING.md`.
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License.
 
 -----
 
