@@ -81,6 +81,17 @@ python cli.py init MyMovie
 
 # Run the demo
 python cli.py demo --dry-run
+
+# Create/init a vault file
+python cli.py vault init MyMovie
+
+# Add/list/show assets in the vault
+python cli.py vault add --project MyMovie --name Hero --image ref/hero.png --type person
+python cli.py vault list MyMovie
+python cli.py vault show --project MyMovie Hero
+
+# Assemble frames into a video
+python cli.py assemble --dir MyMovie/renders --pattern "*.png" --fps 24 --out MyMovie/renders/final.mp4
 ```
 
 ## 🛠 Architecture
@@ -99,6 +110,14 @@ graph LR
 ## 🤝 Contributing
 
 We welcome contributions! Please see `CONTRIBUTING.md`.
+
+## 🔮 Future improvements
+
+- **Shots planner**: `shots add/list/export` to make runs reproducible and resumable.
+- **Run/resume orchestration**: `run --resume` with prompt_id tracking and retry logic.
+- **Backend tools**: `comfy ping/queue/history` helpers for ComfyUI debugging.
+- **Graph templates & validation**: real ComfyUI graphs for IP-Adapter/ControlNet, plus `graph validate`.
+- **Doctor command**: dependency/env checks with actionable fixes (ComfyUI reachable, output permissions, etc.).
 
 ## 📄 License
 
